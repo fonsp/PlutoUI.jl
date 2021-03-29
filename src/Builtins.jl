@@ -228,14 +228,17 @@ See the [Mozilla docs about `select`](https://developer.mozilla.org/en-US/docs/W
 struct MultiSelect
     options::Array{Pair{<:AbstractString,<:Any},1}
     default::Union{Missing, AbstractVector{AbstractString}}
+    size::Int
 end
-MultiSelect(options::Array{<:AbstractString,1}; default=missing) = MultiSelect([o => o for o in options], default)
-MultiSelect(options::Array{<:Pair{<:AbstractString,<:Any},1}; default=missing) = MultiSelect(options, default)
+MultiSelect(options::Array{<:AbstractString,1}; default=missing, size=min(10, length(options)) = MultiSelect([o => o for o in options], default, size)
+MultiSelect(options::Array{<:Pair{<:AbstractString,<:Any},1}; default=missing, size=min(10, length(options))) = MultiSelect(options, default, size)
 
-function show(io::IO, ::MIME"text/html", select::MultiSelect)
-    withtag(io, Symbol("select multiple")) do
-        for o in select.options
-            print(io, """<option value="$(htmlesc(o.first))"$(!ismissing(select.default) && o.first ∈ select.default ? " selected" : "")>""")
+function show(io::IO, ::MIME"text/html", m::MultiSelect)
+    withtag(io, Symbol("select multiple"), :size=>"$(m.size)") do
+        for o in m.options
+            v = !ismissing(m.default) && o.first ∈ m.default ? " selected" : ""
+            s = """<option value="$(Markdown.htmlesc(o.first))"$v>"""
+            print(io, s)
             if showable(MIME"text/html"(), o.second)
                 show(io, MIME"text/html"(), o.second)
             else
