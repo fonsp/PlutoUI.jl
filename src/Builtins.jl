@@ -4,36 +4,68 @@ import Dates
 export Slider, NumberField, Button, CheckBox, TextField, PasswordField, Select, MultiSelect, Radio, FilePicker, DateField, TimeField, ColorStringPicker
 
 struct Slider
-    range::AbstractRange
-    default::Number
+    vector::AbstractVector{<:Union{Real,AbstractString}}
+    default::Union{Real,AbstractString}
     show_value::Bool
 end
 
-"""A Slider on the given `range`.
+"""A Slider on the given vector.
 
 ## Examples
 `@bind x Slider(1:10)`
 
-`@bind x Slider(0.00 : 0.01 : 0.30)`
+`@bind x Slider(0.00 : 0.01 : 0.30; default=0.15, show_value=true)`
 
-`@bind x Slider(1:10; default=8, show_value=true)`
+`@bind x Slider(["A","B","C","D"])`
 
 """
-Slider(range::AbstractRange; default=missing, show_value=false) = Slider(range, (default === missing) ? first(range) : default, show_value)
+Slider(
+    vector::AbstractVector{<:Union{Real,AbstractString}};
+    default::Union{Missing,Real,AbstractString}=missing,
+    show_value=false
+) = Slider(vector, (default === missing) ? first(vector) : default, show_value)
 
 function show(io::IO, ::MIME"text/html", slider::Slider)
-    print(io, """<input 
-        type="range" 
-        min="$(first(slider.range))" 
-        step="$(step(slider.range))" 
-        max="$(last(slider.range))" 
-        value="$(slider.default)"
-        $(slider.show_value ? "oninput=\"this.nextElementSibling.value=this.value\"" : "")
-        >""")
+    # Reindex to correspond to Javascript-like index
+    indices = eachindex(slider.vector)
+    defaultindex = findfirst(isequal(slider.default),slider.vector)
+    defaultindex = defaultindex === nothing ? 0 : defaultindex - 1
     
-    if slider.show_value
-        print(io, """<output>$(slider.default)</output>""")
+    # Escape strings to be used in script
+    parsedvector = slider.vector
+    if parsedvector isa AbstractVector{<:AbstractString}
+        parsedvector = ["\"$(replace(el, r"([\'\"])" => s"\\\1"))\"" for el in parsedvector]
     end
+    
+    # Output
+    input = """<input 
+        type="range" 
+        min="0" 
+        step="1" 
+        max="$(length(indices)-1)" 
+        value="$(defaultindex)"
+        >"""
+    output = slider.show_value ? "<output>$(slider.vector[indices[defaultindex+1]])</output>" : ""
+    js = """
+	<script>
+		const slider = this.currentScript.parentElement
+        const sInput = slider.querySelector("input")
+        const sOutput = slider.querySelector("output")
+        const showVal = sOutput !== null
+        const values = [$(join(parsedvector,","))]
+        sInput.oninput = (e) => {
+            var index = sInput.valueAsNumber
+            slider.value = values[index]
+            if (showVal)
+                sOutput.value = values[index]
+            slider.dispatchEvent(new CustomEvent("input"))
+            e && e.stopPropagation()
+        }
+        sInput.oninput()
+	</script>
+    """
+    
+    print(io, """<slider>$(input)$(output)$(js)</slider>""")
 end
 
 get(slider::Slider) = slider.default
