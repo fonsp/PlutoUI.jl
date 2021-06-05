@@ -2,6 +2,7 @@ module PlutoUI
 
 import Base: show, get
 import Markdown: htmlesc, withtag
+import HypertextLiteral: @htl, JavaScript
 
 using Reexport
 

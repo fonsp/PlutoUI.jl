@@ -19,21 +19,39 @@ end
 `@bind x Slider(1:10; default=8, show_value=true)`
 
 """
-Slider(range::AbstractRange; default=missing, show_value=false) = Slider(range, (default === missing) ? first(range) : default, show_value)
+Slider(range::AbstractRange; default=first(range), show_value=false) = Slider(range, default, show_value)
 
-function show(io::IO, ::MIME"text/html", slider::Slider)
-    print(io, """<input 
-        type="range" 
-        min="$(first(slider.range))" 
-        step="$(step(slider.range))" 
-        max="$(last(slider.range))" 
-        value="$(slider.default)"
-        $(slider.show_value ? "oninput=\"this.nextElementSibling.value=this.value\"" : "")
-        >""")
-    
-    if slider.show_value
-        print(io, """<output>$(slider.default)</output>""")
-    end
+function show(io::IO, mimetype::MIME"text/html", slider::Slider)
+    range, default, show_value = slider.range, slider.default, slider.show_value
+    show(io, mimetype, @htl("""
+    <span>
+        <input type="range" min="$(first(range))" max="$(last(range))" step="$(step(range))" value="$(default)">
+        $(HTML(show_value ? "<output>$(default)</output>" : ""))
+        
+        <script>
+            let parentnode = currentScript.parentElement
+            let slider = parentnode.querySelector("input")
+        
+            slider.addEventListener("input", e => {
+                parentnode.value = slider.valueAsNumber
+                $(JavaScript(show_value ? "parentnode.querySelector(\"output\").value = slider.valueAsNumber" : ""))
+                parentnode.dispatchEvent(new CustomEvent("input"))
+                e.preventDefault()
+            })
+        
+            parentnode.value = $(default)
+            let localVal = parentnode.value
+            Object.defineProperty(parentnode, "value",
+                {configurable: false,
+                enumerable: false,
+                get: () => {return localVal},
+                set: (newVal) => {
+                    slider.value = newVal
+                    $(JavaScript(show_value ? "parentnode.querySelector(\"output\").value = +newVal" : ""))
+                    localVal = newVal
+                }})
+        </script>
+    </span>"""))
 end
 
 get(slider::Slider) = slider.default
