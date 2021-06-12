@@ -63,16 +63,16 @@ Create a `Resource` for a local file (a base64 encoded data URL is generated).
 
 # Examples
 ```
-Resource("./cat.jpg")
+LocalResource("./cat.jpg")
 ```
 
 ```
-Resource("/home/fons/Videos/nijmegen.mp4", :width => 200)
+LocalResource("/home/fons/Videos/nijmegen.mp4", :width => 200)
 ```
 
 ```
 md\"\"\"
-This is what a duck sounds like: \$(Resource("../data/hannes.mp3"))
+This is what a duck sounds like: \$(LocalResource("../data/hannes.mp3"))
 md\"\"\"
 ```
 """
