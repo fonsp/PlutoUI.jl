@@ -1,4 +1,4 @@
-export with_terminal
+export with_terminal, @terminal
 
 import Suppressor: @color_output, @capture_out, @capture_err
 import Logging:  ConsoleLogger, with_logger
@@ -80,4 +80,27 @@ function with_terminal(f::Function, args...; kwargs...)
 		end
   end
 	WithTerminalOutput(spam_out, spam_err, value)
+end
+
+"""
+A convenience macro for `with_terminal` calls. See usage below.
+			
+__Usage:__
+			
+```julia
+@terminal @show 2+2
+@terminal begin
+	println("2+2 = ", 2+2)
+	println("also...")
+	println("4+4 = ", 4+4)
+end
+@terminal print("Hello, world!")
+```
+"""
+macro terminal(expr)
+	quote
+		with_terminal() do
+			$(esc(expr))
+		end
+	end
 end
